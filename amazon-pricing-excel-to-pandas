@@ -1,0 +1,136 @@
+####################################################Same excel program, now running in Pandas
+
+import pandas as pd
+import numpy as np
+
+
+df = pd.DataFrame( [  [12,12,12,0.75, 1 , 3.19, 0, 0 ]
+                    , [32,18,14,8, 2 , 2.47 , 0, 0 ]
+                    , [36,20,16,8, 3, 5.26, 3*16, 0.38/16 ] 
+                    , [40,20,18,10, 4 , 9.56, 10*16, 0.28/16 ]  ]
+                  , columns = ['ounce', 'l', 'w' , 'd', 'rank', 'fixedcost' , 'threshholdoz' , 'dollarperozbeyondthreshold'] )
+                  
+                  
+#def ordernumbers(a, b,  c):
+#    return a,b,c
+    
+dim1 = 10
+dim2 = 6
+dim3 = 2
+ounce = 13 
+
+l , w , d = ordernumbers(dim1,dim2,dim3)
+
+df['satisfycondition'] = np.where((ounce <= df['ounce'])  & (l <= df['l']) &  (w <= df['w'])  & (d <= df['d'])
+                                  , 1, 0)
+categoryrank = df[df['satisfycondition']==1]['rank'] .min()
+
+Amazoncost = df[df['rank'] == categoryrank]['fixedcost'] 
++ np.where((ounce -  df[df['rank'] == categoryrank]['threshholdoz']) <0 ,0 ,(ounce -  df[df['rank'] == categoryrank]['threshholdoz']))
+#* df[df['rank'] == categoryrank]['dollarperozbeyondthreshold'].max()  
+Amazoncost
+
+
+#################################################################################Excel-style coding
+
+month = input('What month are you going to start storing this item in the Amazon facility? ')
+
+lth_in_inches = input('What is the length of the longest side in inches? (unpackaged) ')
+lth_in_inches = float(lth_in_inches)
+wth_in_inches = input('What is the length of the median side in inches? (unpackaged) ')
+wth_in_inches = float(wth_in_inches)
+dpth_in_inches = input('What is the length of the shortest side in inches? (unpackaged) ')
+dpth_in_inches = float(dpth_in_inches)
+weight_in_oz = input('What is the item weight in oz? (unpackaged) ')
+weight_in_oz = float(weight_in_oz)
+
+#calc for cubic ft, girth, and dimensional weight
+cubic_ft = (lth_in_inches * wth_in_inches * dpth_in_inches)/1728 
+girth = (wth_in_inches * 2) + (dpth_in_inches * 2) 
+dim_weight = (lth_in_inches * wth_in_inches * dpth_in_inches)/139 
+
+#calc for storage costs
+print('')
+print('\033[1m' + 'Amazon Storage Cost:' + '\033[0m')
+
+if month == ('october') or month == ('november') or month == ('december'):
+    print('The monthly storage rate is $2.40 per cubic foot.')
+    storage_cost = 2.40 * cubic_ft
+    print('Storing',cubic_ft,'cubic feet will cost','${:,.2f}'.format(storage_cost),'per month')
+else:
+    print('The monthly storage rate is $0.69 per cubic foot.')
+    storage_cost = 0.69 * cubic_ft
+    print('Storing','{:,.2f}'.format(cubic_ft),'cubic feet will cost','${:,.2f}'.format(storage_cost),'per month.')
+
+#calc for FBA shipping costs
+
+#determine the shipping weight
+
+print('')
+print('\033[1m' + 'Weight of Packaged Item for Shipping:' + '\033[0m')
+
+if lth_in_inches <= 18 and wth_in_inches <= 14 and dpth_in_inches <= 8 and weight_in_oz <= (20*16):
+    
+    if weight_in_oz <= 16:
+        shipping_weight = weight_in_oz + 4
+    else:
+        shipping_weight = 4 + max(weight_in_oz,dim_weight)
+        
+    ship_class = ('standard')
+    print('Item weight ','{:,.2f}'.format(weight_in_oz),'oz. Shipping weight','{:,.2f}'.format(shipping_weight),'oz.')
+else:
+    shipping_weight = 16 + max(weight_in_oz,dim_weight)
+    ship_class = ('oversize')
+    print('Item weight ','{:,.2f}'.format(weight_in_oz),'oz. Shipping weight','{:,.2f}'.format(shipping_weight),'oz.')
+
+#determine the product size tier
+
+
+print('')
+print('\033[1m' + 'Product Size Tier:' + '\033[0m')
+
+if shipping_weight  <= 12 and lth_in_inches <=15 and wth_in_inches <= 12 and dpth_in_inches <=0.75:
+    print('This is a small standard-size item.')
+    FBA_shipping_cost = 2.41
+    
+elif shipping_weight  <= 16 and lth_in_inches <=15 and wth_in_inches <= 12 and dpth_in_inches <=0.75:
+    print('This is a small standard-size item.')
+    FBA_shipping_cost = 2.48
+
+elif shipping_weight  <= 10 and ship_class == ('standard'):
+    print('This is a large standard-size item.')
+    FBA_shipping_cost = 3.19
+    
+elif shipping_weight  >= 10 and shipping_weight <= 16 and ship_class == ('standard'):
+    print('This is a large standard-size item.')
+    FBA_shipping_cost = 3.28
+
+elif shipping_weight  >= 1*16 and shipping_weight <= 2*16 and ship_class == ('standard'):
+    print('This is a large standard-size item.')
+    FBA_shipping_cost = 4.76
+    
+elif shipping_weight  >= 2*16 and shipping_weight <= 3*16 and ship_class == ('standard'):
+    print('This is a large standard-size item.')
+    FBA_shipping_cost = 5.26
+    
+elif shipping_weight >= 3*16 and shipping_weight <= 21*16 and ship_class == ('standard'):
+    print('This is a large standard-size item.')
+    FBA_shipping_cost = 5.26 + (max(0,shipping_weight/16 - 3) * 0.38)
+
+elif shipping_weight  <= (70*16) and lth_in_inches <=60 and wth_in_inches <= 30 and (lth_in_inches+girth) <= 130:
+    print('This is a Small oversize item.')
+    FBA_shipping_cost = 8.26 + (max(0,shipping_weight/16 - 2) * 0.38)
+
+elif shipping_weight  <= (150*16) and lth_in_inches <=108 and (lth_in_inches+girth) <= 130:
+    print('This is a Medium oversize item.')
+    FBA_shipping_cost = 9.79 + (max(0,shipping_weight/16 - 2) * 0.39)
+          
+elif shipping_weight  <= (150*16) and lth_in_inches <=108 and (lth_in_inches+girth) <= 165:
+    print('This is a Large oversize item.')
+    FBA_shipping_cost = 5.78 + (max(0,shipping_weight/16 - 90) * 0.79)      
+          
+else:
+        print('This is a Special oversize item.')
+        FBA_shipping_cost = 137.32 + (max(0,shipping_weight/16 - 90) * 0.91) 
+          
+print('The FBA shipping cost for this item, packaged, is ','${:,.2f}'.format(FBA_shipping_cost))
